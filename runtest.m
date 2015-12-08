@@ -1,0 +1,2 @@
+run(Art2TestCases)
+run(MonitoringHybridSystemTestCases)
