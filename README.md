@@ -93,7 +93,7 @@ For more information see Reference section.
 * Loop over all data points and execute the following method for each point X  
   [is_new_area, is_new_cluster, area_idx, pattern_idx] = hsystem.processPoint(X);
 
-
+The file runSimulation.m contains an example procedure how to run the hybrid system.
 
 Reference
 ---------
