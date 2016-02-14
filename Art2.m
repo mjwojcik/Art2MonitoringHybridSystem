@@ -220,23 +220,16 @@ classdef Art2 < handle
         end
         
         function net = Art2(art2params)
-            net.capacity = art2params.capacity;
-            net.a = art2params.a;
-            net.b = art2params.b;
-            net.c = art2params.c;
-            net.d = art2params.d;
-            net.e = art2params.e;
-            net.learningLength = art2params.learningLength;
-            net.learningRate = art2params.learningRate;
-            net.dataDim = art2params.dataDim;
-            net.theta = art2params.theta;
-            net.vigilance = art2params.vigilance;
-            net.f2f1WeightRatio = art2params.f2f1WeightRatio;
+            members = fieldnames(art2params);
+            for i = 1:length(members)
+                net.(members{i}) = art2params.(members{i});
+            end
             net.reset();
         end
         
         function setupWeights(net, M)
             net.reset();
+            net.vigilance = 0;
             nbOfPoints = size(M,1);
             learningRateBackup = net.learningRate;
             learningLengthBackup = net.learningLength;

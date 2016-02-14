@@ -153,6 +153,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
                         
             hybridparams = MonitoringHybridSystem.getDefaultParams(size(D_scaled,2));   
             hybridparams.DeltaTcheckStability = 250;
+            hybridparams.MaxClusterCountRatio = 1;
             art2params = Art2.getDefaultParams(-1);            
             hsystem = MonitoringHybridSystem(hybridparams, art2params);
             
@@ -358,6 +359,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             hybridparams.DeltaTstart = 14000;
             hybridparams.DeltaTcheckMinMax = 100;
             hybridparams.DeltaTcheckStability = 1000;
+            hybridparams.MaxClusterCountRatio = 1;
             
             art2params = Art2.getDefaultParams(-1);
             art2params.theta = 0.000001;
@@ -390,6 +392,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             hybridparams.DeltaTstart = 14000;
             hybridparams.DeltaTcheckMinMax = 100;
             hybridparams.DeltaTcheckStability = 1000;
+            hybridparams.MaxClusterCountRatio = 1;
             
             art2params = Art2.getDefaultParams(-1);
             art2params.theta = 0.000001;

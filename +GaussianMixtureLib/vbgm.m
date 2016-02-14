@@ -33,7 +33,9 @@ while  ~converged && t < maxiter
     converged = abs(L(t)-L(t-1)) < tol*abs(L(t));
     
 end
-    %figure('Position', [0 0 800 400], 'Name', sprintf('it %d', t));disp(model.alpha); disp(model.m); plot(X(1,:),X(2,:),'.b'); hold on; plot(model.m(1,model.alpha>1.01),model.m(2,model.alpha>1.01),'.r','MarkerSize', 26);
+    % uncomment for debug purpose
+    % alpha_tr = min(model.alpha)*1.01;
+    % figure('Position', [0 0 800 400], 'Name', sprintf('it %d', t));disp(model.alpha); disp(model.m); plot3(X(2,:),X(3,:),X(1,:),'.b'); hold on; plot3(model.m(2,model.alpha>alpha_tr),model.m(3,model.alpha>alpha_tr), model.m(1,model.alpha>alpha_tr),'.r','MarkerSize', 26);
 L = L(2:t);
 label = zeros(1,n);
 [~,label(:)] = max(model.R,[],2);

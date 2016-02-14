@@ -14,9 +14,12 @@ classdef MonitoringHybridSystem < handle
         MinClusterCount
         MaxClusterCountRatio
         MinimalAreaSize
-        OCC_MAX_N
+        VBEM_MAX_N
+        OCC_numberOfComponentsRatio
+        OCC_maxNumberOfComponents
         OCC_tresholdModifier
-        VigilanceModifier
+        VigilanceIncreasingModifier
+        VigilanceDecreasingModifier
         DataDim
         EnableStereographicProjection
        
@@ -78,9 +81,10 @@ classdef MonitoringHybridSystem < handle
             end
         end
         
-        function specialPoints = determineSpecialPoints(data, OCC_MAX_N)
-            [~, vb_model, ~] = GaussianMixtureLib.vbgm(data', OCC_MAX_N);
-            specialPoints = vb_model.m(:,vb_model.alpha > 1.01)';
+        function specialPoints = determineSpecialPoints(data, VBEM_MAX_N)
+            [~, vb_model, ~] = GaussianMixtureLib.vbgm(data', VBEM_MAX_N);
+            alpha_treshold = min(vb_model.alpha)*1.01;
+            specialPoints = vb_model.m(:,vb_model.alpha > alpha_treshold)';
         end
         
         function [ model ] = em_invcov( model )
@@ -111,13 +115,16 @@ classdef MonitoringHybridSystem < handle
             hybridparams.DeltaTcheckMinMax = 50;
             hybridparams.DeltaTcheckStability = 200;
             hybridparams.MinClusterCount = 2;
-            hybridparams.MaxClusterCountRatio = 1;
+            hybridparams.MaxClusterCountRatio = 2;
             hybridparams.MinimalAreaSize = 50;
-            hybridparams.OCC_MAX_N = 30;
+            hybridparams.VBEM_MAX_N = 30;
             hybridparams.OCC_tresholdModifier = 0.01;
-            hybridparams.VigilanceModifier = 0.4;
+            hybridparams.VigilanceIncreasingModifier = 0.4;
+            hybridparams.VigilanceDecreasingModifier = 0.4;
             hybridparams.DataDim = dataDim;
             hybridparams.EnableStereographicProjection = true;
+            hybridparams.OCC_numberOfComponentsRatio = 10;
+            hybridparams.OCC_maxNumberOfComponents = 100;
         end
     end   
     
@@ -130,10 +137,10 @@ classdef MonitoringHybridSystem < handle
         function ART2maintenanceMinMax(obj)
             if (obj.ART2.nbOfClasses < obj.MinClusterCount || (obj.ART2.nbOfClasses > obj.MaxClusterCount && obj.ART2.nbOfClasses ~= obj.MaxClusterCountLastCheck))
                 if (obj.ART2.nbOfClasses < obj.MinClusterCount)
-                    obj.ART2.vigilance = obj.ART2.vigilance + (1-obj.ART2.vigilance) * obj.VigilanceModifier;
+                    obj.ART2.vigilance = obj.ART2.vigilance + (1-obj.ART2.vigilance) * obj.VigilanceIncreasingModifier;
                     obj.log('ART2maintenanceMinMax - vigilance increased');
                 else
-                    obj.ART2.vigilance = obj.ART2.vigilance - (1-obj.ART2.vigilance) * obj.VigilanceModifier;  
+                    obj.ART2.vigilance = obj.ART2.vigilance - (1-obj.ART2.vigilance) * obj.VigilanceDecreasingModifier;  
                     obj.MaxClusterCountLastCheck = obj.ART2.nbOfClasses;
                     obj.log('ART2maintenanceMinMax - vigilance decreased');
                 end
@@ -163,7 +170,7 @@ classdef MonitoringHybridSystem < handle
         function addNewOCC(obj)
             obj.occCount = obj.occCount + 1;
             data = obj.history(1:obj.historyCount,:);
-            occComponents = min(obj.ART2.nbOfClasses * 10, 100);
+            occComponents = min(obj.ART2.nbOfClasses * obj.OCC_numberOfComponentsRatio, obj.OCC_maxNumberOfComponents);
             [~, em_model,~] = GaussianMixtureLib.emgm(data',occComponents);
             em_model = obj.em_invcov(em_model);
             obj.vOCC(obj.occCount).em_model = em_model;
@@ -230,7 +237,7 @@ classdef MonitoringHybridSystem < handle
                 if (obj.T == obj.DeltaTstart)
                     obj.scallingBounds = obj.measureMatrix( obj.history );    
                     obj.history = obj.scaleMatrix(obj.history, obj.scallingBounds);
-                    specialPoints = obj.determineSpecialPoints(obj.history, obj.OCC_MAX_N);
+                    specialPoints = obj.determineSpecialPoints(obj.history, obj.VBEM_MAX_N);
                     if (obj.EnableStereographicProjection)
                         specialPoints = obj.transformUsingStereographicProjection(specialPoints);
                     end
@@ -256,17 +263,10 @@ classdef MonitoringHybridSystem < handle
         end
         
         function obj = MonitoringHybridSystem(hybridparams, art2params)
-            obj.DeltaTstart = hybridparams.DeltaTstart;
-            obj.DeltaTcheckMinMax = hybridparams.DeltaTcheckMinMax;
-            obj.DeltaTcheckStability = hybridparams.DeltaTcheckStability;
-            obj.MinClusterCount = hybridparams.MinClusterCount;
-            obj.MaxClusterCountRatio = hybridparams.MaxClusterCountRatio;
-            obj.MinimalAreaSize = hybridparams.MinimalAreaSize;
-            obj.OCC_MAX_N = hybridparams.OCC_MAX_N;
-            obj.OCC_tresholdModifier = hybridparams.OCC_tresholdModifier;
-            obj.VigilanceModifier = hybridparams.VigilanceModifier;
-            obj.DataDim = hybridparams.DataDim;
-            obj.EnableStereographicProjection = hybridparams.EnableStereographicProjection;
+            members = fieldnames(hybridparams);
+            for i = 1:length(members)
+                obj.(members{i}) = hybridparams.(members{i});
+            end
 
             obj.T = 0;
             obj.historyCount = 0;
