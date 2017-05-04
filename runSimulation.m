@@ -21,10 +21,13 @@ function runSimulation( DATA, dims, art2params, hybridparams)
             
     if (nargin < 4)
         hybridparams = MonitoringHybridSystem.getDefaultParams(size(DATA,2));
-        % hybridparams.DeltaTstart = 1000?;
-        % hybridparams.DeltaTcheckMinMax = 100;
-        % hybridparams.DeltaTcheckStability = 500;
-
+        hybridparams.DeltaTstart = 2000;
+        hybridparams.DeltaTcheckMinMax = 50;
+        hybridparams.DeltaTcheckStability = 200;        
+        hybridparams.MinClusterCount = 2;
+        hybridparams.MaxClusterCountRatio = 3;
+        hybridparams.MinimalAreaSize = 500;        
+        
         art2params = Art2.getDefaultParams(-1);
         art2params.learningRate = 0.01;
         art2params.learningLength = 10;
@@ -62,22 +65,34 @@ function plotAll(DATA, resultAreas, resultClusters, lastAreaCount, lastPointNumb
         
     for areaidx=1:lastAreaCount-1
         filter = resultAreas == areaidx;
-        plot3(DATA(filter, dims(1)), DATA(filter, dims(2)), DATA(filter, dims(3)), getSymbol(areaidx), 'color', getColor(areaidx));
-    end         
+        if (length(dims) == 3)
+            plot3(DATA(filter, dims(1)), DATA(filter, dims(2)), DATA(filter, dims(3)), getSymbol(areaidx), 'color', getColor(areaidx));
+        elseif (length(dims) == 2)
+            plot(DATA(filter, dims(1)), DATA(filter, dims(2)), getSymbol(areaidx), 'color', getColor(areaidx));    
+        end         
+    end
     
     mainfilter = (resultAreas == lastAreaCount);
     maxClusterIdx = max(resultClusters(mainfilter));
     for clusteridx=1:maxClusterIdx
         filter = mainfilter & (resultClusters == clusteridx);
-        plot3(DATA(filter, dims(1)), DATA(filter, dims(2)), DATA(filter, dims(3)), '.', 'color', getColor(clusteridx+20));
+        if (length(dims) == 3)
+            plot3(DATA(filter, dims(1)), DATA(filter, dims(2)), DATA(filter, dims(3)), '.', 'color', getColor(clusteridx+20));
+        elseif (length(dims) == 2)
+            plot(DATA(filter, dims(1)), DATA(filter, dims(2)), '.', 'color', getColor(clusteridx+20));
+        end
     end
     
     hold off;
-    view(45, 45);
+    if (length(dims) == 3)
+        view(45, 45);
+        %view(144, -69);
+    end
     set(h, 'PaperPositionMode', 'auto');
     destination_filename = sprintf('%s/%d', path, lastPointNumber);
     print(h, '-r0', [destination_filename '.png'], '-dpng');
-    saveas(h,[destination_filename '.fig']);     
+    saveas(h,[destination_filename '.fig']);  
+    close(h);
 end
 
 function m = getSymbol(idx)

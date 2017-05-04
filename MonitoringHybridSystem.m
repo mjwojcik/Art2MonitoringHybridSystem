@@ -22,6 +22,8 @@ classdef MonitoringHybridSystem < handle
         VigilanceDecreasingModifier
         DataDim
         EnableStereographicProjection
+        ScalingBoundaryPercentage
+        ZeroAsMaxValueOfMinBound
        
         %% internal members
         MaxClusterCountLastCheck
@@ -46,18 +48,35 @@ classdef MonitoringHybridSystem < handle
     
     methods(Static)
     
-        function [ R ] = measureMatrix( M )    
+        function [ R ] = calculateBounds( M, bZeroAsMaxValueOfMinBound )              
+            if nargin < 2
+                bZeroAsMaxValueOfMinBound = 1;
+            end
             s = size(M,2);
             R.vMinArr = zeros(1,s);
             R.vMaxArr = zeros(1,s);
             for i = 1:s
                 V=M(:,i);
                 R.vMinArr(i) = min(V);
-                if (R.vMinArr(i) > 0)
-                    R.vMinArr(i) = 0;
+                if( bZeroAsMaxValueOfMinBound )
+                    if (R.vMinArr(i) > 0)
+                        R.vMinArr(i) = 0;
+                    end
                 end
                 R.vMaxArr(i) = max(V);
             end
+        end
+        
+        function [V] = scaleVector( V, vMin, vMax )    
+            from = 0;
+            to = 1/sqrt(2);
+
+            V = V-vMin;
+            vDist = vMax - vMin;
+            if (vDist > 0)
+                V = V./vDist;
+            end
+            V = V .* (to-from) + from;
         end
         
         function [ R ] = scaleMatrix( M, scallingBounds )      
@@ -67,7 +86,7 @@ classdef MonitoringHybridSystem < handle
                 V = M(:,i);
                 vMin = scallingBounds.vMinArr(i);
                 vMax = scallingBounds.vMaxArr(i);
-                R(:,i) = scaleVector(V, vMin, vMax);
+                R(:,i) = MonitoringHybridSystem.scaleVector(V, vMin, vMax);
             end
         end
         
@@ -81,10 +100,32 @@ classdef MonitoringHybridSystem < handle
             end
         end
         
+        function [ Y ] = theMostDistancePairOfPoints( data )
+            X = [data(:,1)-data(:,2) data(:,1)+data(:,2)];
+            [~,minidx_x] = min(X(:,1));
+            [~,maxidx_x] = max(X(:,1));
+            [~,minidx_y] = min(X(:,2));
+            [~,maxidx_y] = max(X(:,2));
+
+            y1 = [data(minidx_x,:);data(maxidx_x,:)];
+            y2 = [data(minidx_y,:);data(maxidx_y,:)];
+
+            dy1 = pdist(y1);
+            dy2 = pdist(y2);
+            if (dy1 > dy2)
+              Y = y1;
+            else
+              Y = y2;      
+            end
+        end
+        
         function specialPoints = determineSpecialPoints(data, VBEM_MAX_N)
             [~, vb_model, ~] = GaussianMixtureLib.vbgm(data', VBEM_MAX_N);
             alpha_treshold = min(vb_model.alpha)*1.01;
             specialPoints = vb_model.m(:,vb_model.alpha > alpha_treshold)';
+            if (size(specialPoints,1) == 1)
+                specialPoints = MonitoringHybridSystem.theMostDistancePairOfPoints(data);
+            end
         end
         
         function [ model ] = em_invcov( model )
@@ -125,13 +166,20 @@ classdef MonitoringHybridSystem < handle
             hybridparams.EnableStereographicProjection = true;
             hybridparams.OCC_numberOfComponentsRatio = 10;
             hybridparams.OCC_maxNumberOfComponents = 100;
+            hybridparams.ScalingBoundaryPercentage = 0.1;
+            hybridparams.ZeroAsMaxValueOfMinBound = 1;
+            hybridparams.scallingBounds = [];
         end
+        
+        function scallingBounds = adjustScallingBounds(scallingBounds, ScalingBoundaryPercentage)
+             scallingBounds.vMaxArr = scallingBounds.vMinArr + (scallingBounds.vMaxArr - scallingBounds.vMinArr)./ScalingBoundaryPercentage;
+        end            
     end   
     
     methods
                 
         function log(obj, message)
-            log4m.getLogger.info(sprintf('R[%.3f] A[%d] C[%d] NM[%d] NS[%d]', obj.ART2.vigilance, obj.occCount, obj.ART2.nbOfClasses, obj.NextCheckMinMaxART2, obj.NextCheckStabilityART2), message);
+            log4m.getLogger.info(sprintf('R[%.6f] A[%d] C[%d] NM[%d] NS[%d]', obj.ART2.vigilance, obj.occCount, obj.ART2.nbOfClasses, obj.NextCheckMinMaxART2, obj.NextCheckStabilityART2), message);
         end
         
         function ART2maintenanceMinMax(obj)
@@ -191,8 +239,7 @@ classdef MonitoringHybridSystem < handle
                 end
             end
             areaidx = obj.occCount + 1;
-        end
-        
+        end           
         
         function [newarea, newcluster, areaidx, clusteridx] = processPoint(obj, X)
             % newarea - is new area added when the point X is processed?
@@ -212,7 +259,7 @@ classdef MonitoringHybridSystem < handle
             areaidx = -1;
             clusteridx = -1;
             if (obj.isinit)      
-                X = scaleVector(X, obj.scallingBounds.vMinArr, obj.scallingBounds.vMaxArr);
+                X = MonitoringHybridSystem.scaleVector(X, obj.scallingBounds.vMinArr, obj.scallingBounds.vMaxArr);
                 areaidx = obj.isAlreadyKnown(X);
                 if (areaidx <= obj.occCount)
                     log4m.getLogger.debug(sprintf('R[%.3f] A[%d] C[%d]', obj.ART2.vigilance, obj.occCount, obj.ART2.nbOfClasses), sprintf('processPoint - the point [%f] is known as area idx %d', X, areaidx));
@@ -235,7 +282,8 @@ classdef MonitoringHybridSystem < handle
             else
                 obj.addToHistory(X);
                 if (obj.T == obj.DeltaTstart)
-                    obj.scallingBounds = obj.measureMatrix( obj.history );    
+                    obj.scallingBounds = obj.calculateBounds( obj.history, obj.ZeroAsMaxValueOfMinBound );  
+                    obj.scallingBounds = obj.adjustScallingBounds(obj.scallingBounds, obj.ScalingBoundaryPercentage);
                     obj.history = obj.scaleMatrix(obj.history, obj.scallingBounds);
                     specialPoints = obj.determineSpecialPoints(obj.history, obj.VBEM_MAX_N);
                     if (obj.EnableStereographicProjection)
@@ -281,19 +329,19 @@ classdef MonitoringHybridSystem < handle
             end
             obj.ART2 = Art2(art2params);            
             obj.history = zeros(obj.DeltaTstart, obj.DataDim);
+            
+            if (hybridparams.DeltaTstart <= 0)
+                obj.isinit = true;
+                obj.scallingBounds = hybridparams.scallingBounds;
+            end
+            if(hybridparams.DeltaTcheckMinMax <= 0)
+                obj.NextCheckMinMaxART2 = intmax;
+            end
+            if(hybridparams.DeltaTcheckStability <= 0)
+                obj.NextCheckStabilityART2 = intmax;
+            end
         end    
     end
-end
-
-function [V] = scaleVector( V, vMin, vMax )    
-    from = 0;
-    to = 1/sqrt(2);
-
-    V = V-vMin;
-    if (vMax > 0)
-        V = V./vMax;
-    end
-    V = V .* (to-from) + from;
 end
 
 function [ R ] = transformVector( V )

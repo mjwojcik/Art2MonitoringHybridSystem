@@ -15,7 +15,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             art2params.vigilance = 0.997;
             art2 = Art2(art2params);
 
-            scallingBounds = MonitoringHybridSystem.measureMatrix(D);    
+            scallingBounds = MonitoringHybridSystem.calculateBounds(D);    
             scaled_D = MonitoringHybridSystem.scaleMatrix(D, scallingBounds);
             
             nbOfPoints = size(scaled_D, 1);
@@ -79,7 +79,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
         function hybridSystemDetermineSpecialPoints(testCase)
             D = BaseTestCases.generate2DdataSet3();
             D = D(1:1100,:);
-            D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.measureMatrix(D));
+            D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.calculateBounds(D));
             specialPoints = MonitoringHybridSystem.determineSpecialPoints(D_scaled, 30);
             %plotData(specialPoints, 5*ones(1,size(specialPoints,2)));
             testCase.assertEqual(size(specialPoints), [2 2]);
@@ -149,7 +149,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
   
         function hybridSystemCreateOCC(testCase)
             D = BaseTestCases.generate2DdataSet3;
-            D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.measureMatrix(D));
+            D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.calculateBounds(D));
                         
             hybridparams = MonitoringHybridSystem.getDefaultParams(size(D_scaled,2));   
             hybridparams.DeltaTcheckStability = 250;
@@ -195,7 +195,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             art2params = Art2.getDefaultParams(-1);
             art2params.theta = 0.001;
 
-            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.measureMatrix(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
+            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.calculateBounds(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
             
             hsystem = MonitoringHybridSystem(hybridparams, art2params);
                         
@@ -250,7 +250,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             art2params = Art2.getDefaultParams(-1);
             art2params.theta = 0.001;
 
-            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.measureMatrix(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
+            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.calculateBounds(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
             
             hsystem = MonitoringHybridSystem(hybridparams, art2params);
                         
@@ -306,7 +306,7 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             art2params = Art2.getDefaultParams(-1);
             art2params.theta = 0.001;
 
-            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.measureMatrix(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
+            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.calculateBounds(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
             
             hsystem = MonitoringHybridSystem(hybridparams, art2params);
                         
@@ -360,11 +360,12 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             hybridparams.DeltaTcheckMinMax = 100;
             hybridparams.DeltaTcheckStability = 1000;
             hybridparams.MaxClusterCountRatio = 1;
+            hybridparams.ScalingBoundaryPercentage = 1;
             
             art2params = Art2.getDefaultParams(-1);
             art2params.theta = 0.000001;
 
-            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.measureMatrix(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
+            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.calculateBounds(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
             
             hsystem = MonitoringHybridSystem(hybridparams, art2params);
 
@@ -393,11 +394,12 @@ classdef MonitoringHybridSystemTestCases < BaseTestCases
             hybridparams.DeltaTcheckMinMax = 100;
             hybridparams.DeltaTcheckStability = 1000;
             hybridparams.MaxClusterCountRatio = 1;
+            hybridparams.ScalingBoundaryPercentage = 1;
             
             art2params = Art2.getDefaultParams(-1);
             art2params.theta = 0.000001;
 
-            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.measureMatrix(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
+            % D_scaled = MonitoringHybridSystem.scaleMatrix(D, MonitoringHybridSystem.calculateBounds(D(1:hybridparams.DeltaTstart,:))); % debug matrix         
             
             hsystem = MonitoringHybridSystem(hybridparams, art2params);
 
