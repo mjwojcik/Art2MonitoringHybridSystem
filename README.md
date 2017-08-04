@@ -100,11 +100,9 @@ Reference
 
 **If you use this tools in some scientific research, please cite the following paper:**
 
-**Barszcz, T., Bielecka, M., Bielecki, A. & Wójcik, M. (2012).**  
-***Wind speed modelling using Weierstrass function fitted by a genetic algorithm.***  
-**Journal of Wind Engineering and Industrial Aerodynamics, vol. 109, 68–78**
-
-This paper was a starting point of the scientific research proving that wind turbines need to be monitored using intelligent systems able to consider a machine variable load. The Monitoring Hybrid System is a one that meets these needs. It will be described in detail in the next author’s scientific paper.
+**Bielecki, A. & Wójcik M. (2017).**  
+***Hybrid system of ART and RBF neural networks for online clustering.***  
+**Applied Soft Computing, vol. 58, 1-10, ISSN 1568-4946**
 
 The research was supported by the National Centre for Research and Development in Poland, grant number WND-DEM-1-153/01.
 
